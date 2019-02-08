@@ -1,0 +1,335 @@
+---
+title: 'Exercise 1: Getting started with data science and machine learning'
+author: "Jacqueline Liu"
+output: html_notebook
+---
+
+Assignments for the course focus on practical aspects of the concepts covered in the lectures. Assignments are based on the material covered in James et al. Normally you will start working on the assignments after class. **Think about the assignments as the most practical and also the best way to learn machine learning!**
+  
+  
+# Introduction to RMarkdown
+  
+Before we dive into our first exercise, let's become a bit more familiar with the programming tools used in this course.
+
+We will write our annotated R code using [Markdown](http://rmarkdown.rstudio.com).
+
+__Markdown__ is a simple formatting syntax to generate HTML or PDF documents. In combination with R, it will generate a document that includes the comments, the R code, and the output of running such code.
+
+You can embed R code in chunks like this one:
+
+```{r}
+1 + 1
+```
+
+You can run each chunk of code one by one, by highlighting the code and clicking `Run` (or pressing `Ctrl + Enter` in Windows or `command + enter` in OS X). You can see the output of the code in the console right below, inside the RStudio window.
+
+Alternatively, you can generate (or __knit__) an html document with all the code, comment, and output in the entire `.Rmd` file by clicking on `Knit HTML`. The Notebook contains HTML output and embedded code. You can generate it by clicking `Preview` after running all the code chunks.
+
+You can also embed plots and graphics, for example:
+
+```{r}
+x <- c(1, 3, 4, 5)
+y <- c(2, 6, 8, 10)
+plot(x, y)
+```
+
+If you run the chunk of code, the plot will be generated on the panel on the bottom right corner. If instead you knit the entire file, the plot will appear after you view the html document.
+
+Using R + Markdown has several advantages: it leaves an "audit trail" of your work, including documentation explaining the steps you made. This is helpful to not only keep your own progress organised, but also make your work reproducible and more transparent. You can easily correct errors (just fix them and run the script again), and after you have finished, you can generate a PDF or HTML version of your work.
+
+We will be exploring R through R Markdown over the next weeks. For more details and documentation see <http://rmarkdown.rstudio.com>. R (or Python) Notebooks are also the only acceptable format for your assignments!
+
+# Make sure R and RStudio are installed
+
+Follow the instructions in the class material and install R and RStudio. If you feel more comfortable using the basic R terminal, skip the step of installing RStudio and the corresponding chunk.
+
+Now run the following code to make sure that you have the current version of R.
+
+```{r}
+version$version.string
+```
+
+This chunk should return something like `R version 3.5.1 (2018-07-02)`.
+
+```{r}
+rstudioapi::versionInfo()$version
+```
+
+This chunk should print `1.1.423`.
+
+If they do not, then try to get as close to the current versions as possible!
+
+# Basic regression operations in R
+
+For this we will use the automobile dataset from the James et. al. text.  This can be found in the **ISLR** package in R.  
+
+Start by loading this package:
+
+```{r}
+install.packages("ISLR")
+```
+
+```{r}
+library(ISLR)
+```
+
+Now we can regress miles-per-gallon on the weight of the vehicle and the number of cylinders.
+
+```{r}
+data(Auto)
+with(Auto, lm(mpg ~ weight + cylinders))
+```
+
+Why did we need the `with()` wrapper?
+
+The `with()` wrapper applies the `lm()` function, which regresses miles-per-gallon (`mpg`) with `weight` and `cylinders`, to the dataset `Auto`. 
+
+
+
+# Exercise 
+
+## 1. Working with a sample dataset
+
+This exercise relates to the `College` data set, which can be found in the file `College.csv` on the website for the main course textbook (James et al 2013) http://www-bcf.usc.edu/~gareth/ISL/data.html. It contains a number of variables for 777 different universities and colleges in the US.   
+
+The variables are:    
+* `Private` : Public/private indicator  
+* `Apps` : Number of applications received  
+* `Accept` : Number of applicants accepted  
+* `Enroll` : Number of new students enrolled  
+* `Top10perc` : New students from top 10% of high school class 
+* `Top25perc` : New students from top 25% of high school class  
+* `F.Undergrad` : Number of full-time undergraduates 
+* `P.Undergrad` : Number of part-time undergraduates  
+* `Outstate` : Out-of-state tuition  
+* `Room.Board` : Room and board costs  
+* `Books` : Estimated book costs  
+* `Personal` : Estimated personal spending  
+* `PhD` : Percent of faculty with Ph.D.'s  
+* `Terminal` : Percent of faculty with terminal degree  
+* `S.F.Ratio` : Student/faculty ratio 
+* `perc.alumni` : Percent of alumni who donate  
+* `Expend` : Instructional expenditure per student  
+* `Grad.Rate` : Graduation rate  
+
+Before reading the data into R, it can be viewed in Excel or a text editor, if you find that convenient.
+
+### 1.1 Load the data
+
+Use the `read.csv()` function to read the data into `R`. Call the loaded data `college`. Make sure that you have the directory set to the correct location for the data.  You can load this in R directly from the website, using:
+  
+```{r}
+college <- read.csv("http://www-bcf.usc.edu/~gareth/ISL/College.csv")
+```
+
+### 1.2 View the data
+
+Look at the data using the `View()` function. You should notice that the first column is just the name of each university. We don't really want R to treat this as data. However, it may be handy to have these names for later. Try the following commands:
+
+```{r, eval=FALSE}
+rownames(college) <- college[, 1] 
+View(college)
+```
+
+You should see that there is now a `row.names` column with the name of each university recorded. This means that R has given each row a name corresponding to the appropriate university. R will not try to perform calculations on the row names. However, we still need to eliminate the first column in the data where the names are stored. Try
+
+```{r, eval=FALSE}
+college <- college[, -1] 
+View(college)
+```
+
+Now you should see that the first data column is `Private`. Note that another column labeled `row.names` now appears before the `Private` column. However, this is not a data column but rather the name that `R` is giving to each row.
+
+### 1.3 Try some operations
+
+a.  Use the `summary()` function to produce a numerical summary of the variables in the data set.
+
+```{r}
+summary(college)
+```
+
+b.  Use the `pairs()` function to produce a scatterplot matrix of the first ten columns or variables of the data. Recall that you can reference the first ten columns of a matrix `A` using `A[,1:10]`.
+
+```{r}
+pairs(college[,1:10])
+```
+
+
+c.  Use the `plot()` function to produce side-by-side boxplots of `Outstate` versus `Private`.
+
+```{r}
+plot(college$Private, college$Outstate)
+```
+
+
+d.  Create a new qualitative variable, called `Elite`, by *binning* the `Top10perc` variable. We are going to divide universities into two groups based on whether or not the proportion of students coming from the top 10% of their high school classes exceeds 50%.
+
+```{r, eval=FALSE} 
+Elite <- rep("No", nrow(college))
+Elite[college$Top10perc > 50] <- "Yes"
+Elite <- as.factor(Elite)
+college <- data.frame(college, Elite)
+```
+
+Use the `summary()` function to see how many elite universities there are. Now use the `plot()` function to produce side-by-side boxplots of `Outstate` versus `Elite`.
+
+```{r}
+summary(college$Elite)
+```
+
+```{r}
+plot(college$Elite, college$Outstate, main = "Plot of Outstate vs. Elite", xlab = "Elite", ylab = "Outstate")
+```
+
+
+Continue exploring the data, and provide a brief summary of what you discover.
+
+
+```{r}
+par(mfrow = c(2,2))
+plot(college$Outstate, college$Room.Board, xlab = "Outstate", ylab = "Room and board costs")
+plot(college$Outstate, college$Personal, xlab = "Outstate", ylab = "Personal spending")
+plot(Elite, college$Room.Board, xlab = "Elite", ylab = "Room.Board")
+plot(Elite, college$Personal, xlab = "Elite", ylab = "Personal")
+```
+
+Out-of-state tuition fees have a positive relationship with room and board costs. However, personal spending seems comparable across individuals regardless of whether they attend an elite college with higher tuition fees.  
+
+```{r}
+par(mfrow = c(2,2))
+plot(Elite, college$Accept/college$Apps, xlab = "Elite", ylab = "Accept/Apps")
+plot(Elite, college$Grad.Rate, xlab = "Elite", ylab = "Grad.Rate")
+plot(Elite, college$PhD, xlab = "Elite", ylab = "PhD")
+plot(Elite, college$S.F.Ratio, xlab = "Elite", ylab = "S.F.Ratio")
+```
+Elite colleges have lower acceptance rates and higher graduation rates than non-elite colleges. Elite colleges also have a higher percentage of faculty with PhDs and a lower student-faculty ratio compared to non-elite colleges. 
+
+```{r}
+par(mfrow = c(1,2))
+plot(college$Top10perc, college$Grad.Rate, xlab = "Top10perc", ylab = "Grad.Rate")
+hist(college$Grad.Rate, main = NULL, xlab = "Grad.Rate")
+```
+However, colleges with the highest number of students from the top 10% of their high school class do not necessarily have the highest grduation rate. In addition, a closer inspection of the graduation rate also revealed a rate of more than 100, which is likely to be erroneous.  
+
+### 2. Working with the automotive dataset
+
+This exercise involves the `Auto` data set available as `Auto.csv` from the website for the main course textbook James et al. http://www-bcf.usc.edu/~gareth/ISL/data.html. Make sure that the missing values have been removed from the data. You should load that dataset as the first step of the exercise. 
+
+```{r}
+Auto <- read.csv("http://www-bcf.usc.edu/~gareth/ISL/Auto.csv", stringsAsFactors = FALSE, header = TRUE, na.strings = "?")
+```
+
+```{r, eval=FALSE}
+View(Auto)
+```
+
+```{r}
+any(is.na(Auto))
+sum(is.na(Auto))
+summary(Auto)
+dim(Auto)
+```
+There are 5 missing values in the dataset. 
+
+```{r}
+Auto_clean = na.omit(Auto)
+dim(Auto_clean)
+```
+5 rows containing the missing values have been removed in the clean dataset. 
+
+
+(a) Which of the predictors are quantitative, and which are qualitative?
+
+```{r}
+str(Auto_clean)
+View(Auto_clean)
+```
+
+* Quantitative predictors: mpg, cylinders, displacement, horsepower, weight, acceleration, year 
+
+* Qualitative predictors: origin, name 
+
+(b) What is the *range* of each quantitative predictor? You can answer this using the `range()` function.
+
+```{r}
+sapply(Auto_clean[,1:7], range)
+```
+
+(c) What is the mean and standard deviation of each quantitative predictor?
+__Mean__
+```{r}
+sapply(Auto_clean[,1:7], mean)
+```
+
+__Standard deviation__
+```{r}
+sapply(Auto_clean[,1:7], sd)
+```
+
+(d) Now remove the 10th through 85th observations. What is the range, mean, and standard deviation of each predictor in the subset of the data that remains?
+
+```{r}
+subAuto = Auto_clean[-(10:85),]
+summary(subAuto)
+View(subAuto)
+```
+
+__Range__
+```{r}
+sapply(subAuto[,1:7], range)
+```
+
+__Mean__
+```{r}
+sapply(subAuto[,1:7], mean)
+```
+
+__Standard deviation__
+```{r}
+sapply(subAuto[,1:7], sd)
+```
+
+(e) Using the full data set, investigate the predictors graphically, using scatterplots or other tools of your choice. Create some plots highlighting the relationships among the predictors. Comment on your findings.
+
+```{r}
+hist(Auto$mpg, main = "Histogram of mpg", xlab = "mpg")
+```
+
+__Relationship of predictors with `mpg`__
+```{r}
+par(mfrow = c(2,2))
+plot(Auto$displacement, Auto$mpg, xlab = "displacement", ylab = "mpg")
+plot(Auto$horsepower, Auto$mpg, xlab = "horsepower", ylab = "mpg")
+plot(Auto$weight, Auto$mpg, xlab = "weight", ylab = "mpg")
+plot(Auto$acceleration, Auto$mpg, xlab = "acceleration", ylab = "mpg")
+```
+
+```{r}
+par(mfrow = c(1,2))
+boxplot(Auto$mpg ~ Auto$cylinders, xlab = "cylinders", ylab = "mpg")
+boxplot(Auto$mpg ~ Auto$year, xlab = "year", ylab = "mpg")
+```
+
+Overall, predictors appear to have a non-linear relationship with `mpg`. Higher levels of displacement, horsepower and weight seem correlated with lower gas mileage/ fuel efficiency. While higher acceleration may or may not correspond to higher gas mileage/ fuel efficiency. The number of cylinders and `mpg` seems to have diminishing marginal effects on `mpg`. Older cars are also likely to be less efficient. 
+
+__Relationships between predictors__
+```{r}
+par(mfrow = c(2,2))
+plot(Auto$cylinders, Auto$displacement)
+plot(Auto$displacement, Auto$horsepower)
+plot(Auto$cylinders, Auto$weight)
+plot(Auto$acceleration, Auto$horsepower)
+```
+
+Some of the predictors appear to be correlated with each other. Number of cylinders is positively correlated with displacement as the measurement of engine displacement depends on the number of cylinders. Number of cylinders also exhibits a positive relationship with weight. Displacement may also generally be positively related with horsepower, while acceleration seems to be negatively related to horsepower. 
+
+(f) Suppose that we wish to predict gas mileage (`mpg`) on the basis of the other variables. Do your plots suggest that any of the other variables might be useful in predicting `mpg`? Justify your answer.
+
+As most of the predictors except for `name` and `origin` exhibit some relationship with `mpg`, they could be used to predict gas mileage. However, we should avoid including too many of these predictors in a model (e.g. multiple linear regression) as several predictors may be correlated with each other resulting in multicollinearity, which may affect the efficiency of the model. Other model designs should be considered to control for correlations between predictors. As predictors seem to have a non-linear relationship with `mpg`, this could indicate the need to use the logarithm of `mpg` as the dependent variable in our models. 
+
+The predictors `name` and `origin` did not have enough observations per name/ origin. Including these predictors may result in overfitting. 
+
+### Further materials
+
+- [Data Camp R tutorials](https://www.datacamp.com/courses/free-introduction-to-r)
+- [Data Camp R Markdown tutorials](https://www.datacamp.com/courses/reporting-with-r-markdown). You can complete the free first chapter. 
