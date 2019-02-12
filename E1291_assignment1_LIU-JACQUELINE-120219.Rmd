@@ -126,16 +126,16 @@ college <- read.csv("http://www-bcf.usc.edu/~gareth/ISL/College.csv")
 
 Look at the data using the `View()` function. You should notice that the first column is just the name of each university. We don't really want R to treat this as data. However, it may be handy to have these names for later. Try the following commands:
 
-```{r, eval=FALSE}
+```{r}
 rownames(college) <- college[, 1] 
 View(college)
 ```
 
 You should see that there is now a `row.names` column with the name of each university recorded. This means that R has given each row a name corresponding to the appropriate university. R will not try to perform calculations on the row names. However, we still need to eliminate the first column in the data where the names are stored. Try
 
-```{r, eval=FALSE}
+```{r}
 college <- college[, -1] 
-View(college)
+head(college)
 ```
 
 Now you should see that the first data column is `Private`. Note that another column labeled `row.names` now appears before the `Private` column. However, this is not a data column but rather the name that `R` is giving to each row.
@@ -216,33 +216,18 @@ However, colleges with the highest number of students from the top 10% of their 
 This exercise involves the `Auto` data set available as `Auto.csv` from the website for the main course textbook James et al. http://www-bcf.usc.edu/~gareth/ISL/data.html. Make sure that the missing values have been removed from the data. You should load that dataset as the first step of the exercise. 
 
 ```{r}
-Auto <- read.csv("http://www-bcf.usc.edu/~gareth/ISL/Auto.csv", stringsAsFactors = FALSE, header = TRUE, na.strings = "?")
-```
-
-```{r, eval=FALSE}
-View(Auto)
-```
-
-```{r}
-any(is.na(Auto))
-sum(is.na(Auto))
-summary(Auto)
+Auto <- read.csv("http://www-bcf.usc.edu/~gareth/ISL/Auto.csv", 
+                 header = TRUE, na.strings = "?")
+Auto <- na.omit(Auto)
 dim(Auto)
+summary(Auto)
 ```
-There are 5 missing values in the dataset. 
-
-```{r}
-Auto_clean = na.omit(Auto)
-dim(Auto_clean)
-```
-5 rows containing the missing values have been removed in the clean dataset. 
 
 
 (a) Which of the predictors are quantitative, and which are qualitative?
 
 ```{r}
-str(Auto_clean)
-View(Auto_clean)
+str(Auto)
 ```
 
 * Quantitative predictors: mpg, cylinders, displacement, horsepower, weight, acceleration, year 
@@ -252,24 +237,24 @@ View(Auto_clean)
 (b) What is the *range* of each quantitative predictor? You can answer this using the `range()` function.
 
 ```{r}
-sapply(Auto_clean[,1:7], range)
+sapply(Auto[,1:7], range)
 ```
 
 (c) What is the mean and standard deviation of each quantitative predictor?
 __Mean__
 ```{r}
-sapply(Auto_clean[,1:7], mean)
+sapply(Auto[,1:7], mean)
 ```
 
 __Standard deviation__
 ```{r}
-sapply(Auto_clean[,1:7], sd)
+sapply(Auto[,1:7], sd)
 ```
 
 (d) Now remove the 10th through 85th observations. What is the range, mean, and standard deviation of each predictor in the subset of the data that remains?
 
 ```{r}
-subAuto = Auto_clean[-(10:85),]
+subAuto = Auto[-(10:85),]
 summary(subAuto)
 View(subAuto)
 ```
@@ -296,6 +281,14 @@ hist(Auto$mpg, main = "Histogram of mpg", xlab = "mpg")
 ```
 
 __Relationship of predictors with `mpg`__
+
+```{r}
+library(ggplot2)
+with(Auto, ggplot(Auto, aes(x = mpg, y = horsepower)) 
+     + geom_point() 
+     + geom_smooth(method=lm, se=FALSE))
+```
+
 ```{r}
 par(mfrow = c(2,2))
 plot(Auto$displacement, Auto$mpg, xlab = "displacement", ylab = "mpg")
