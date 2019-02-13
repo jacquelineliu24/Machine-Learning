@@ -52,7 +52,7 @@ The F-statistic returned was very large at 252.4. Furthermore, the p-value assoc
 
 **ii. Which predictors appear to have a statistically significant relationship to the response?**
 
-The predictors `displacement`, `weight`, `year`, and `origin` appear to have a statistically significant relationship to the response at 99% significant level. 
+The predictors `displacement`, `weight`, `year`, and `origin` appear to have a statistically significant relationship to the response at the 99% significance level. 
 
 
 **iii. What does the coefficient for the `year` variable suggest?**
