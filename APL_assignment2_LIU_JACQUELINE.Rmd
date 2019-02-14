@@ -1,7 +1,9 @@
 ---
 title: "Assignment 2 - Linear Regression"
 author: "Jacqueline Liu"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 This assignment is based on the material covered in James et al. We will subsequently open up solutions to the problem sets.
@@ -149,7 +151,7 @@ $$Sales = 13.04 - 0.05(Price) - 0.02(UrbanYes) + 1.20(USYes) + \epsilon$$
 (d) For which of the predictors can you reject the null hypothesis $H_0 : \beta_j =0$?
 
 
-I can reject `Price` and `USYes` based on their respective p-values. 
+I can reject the null hypothesis for `Price` and `USYes` based on their respective p-values, which are very small (p-value << 0). 
 
 
 (e) On the basis of your response to the previous question, fit a smaller model that only uses the predictors for which there is evidence of association with the outcome.
