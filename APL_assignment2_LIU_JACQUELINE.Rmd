@@ -1,9 +1,7 @@
 ---
 title: "Assignment 2 - Linear Regression"
 author: "Jacqueline Liu"
-output:
-  html_document:
-    df_print: paged
+output: html_notebook
 ---
 
 This assignment is based on the material covered in James et al. We will subsequently open up solutions to the problem sets.
@@ -61,6 +59,13 @@ The coefficient for the `year` variable suggests that as the year increases by 1
 
 (d) Use the `*` and `:` symbols to fit linear regression models with interaction effects. Do any interactions appear to be statistically significant?
 
+
+I arbitrarily selected the variables to include as interaction terms based on the correlation matrix. Variables that were highly correlated with another variable (e.g. >0.85) were used in the interaction terms. I only included one interaction term in each model at first. In each model, the interaction term was always highly statistically significant (p-value << 0). 
+
+I then tried including two interaction terms in one model and found that while both interaction terms were statistically significant, the `cylinders:displacement` term had a much higher p-value than the `horsepower:weight` term.  
+
+Including as many interaction terms as possible in one model (21 interaction terms) resulted in 6 interaction terms that were statistically significant at the 95% significance level. Although the adjusted R-squared for this model was the highest (where the predictors appeared to explain about 88% of the variation in the response), including so many interaction terms in one model may have led me to over-fit this particular model. 
+
 ```{r}
 # Including interaction terms
 lm.fit1 = lm(mpg ~.-name+cylinders*displacement, data = Auto)
@@ -80,16 +85,22 @@ summary(lm.fit5)
 
 lm.fit6 = lm(mpg ~.-name+weight*horsepower, data = Auto)
 summary(lm.fit6)
+# Interaction terms were highly statistically significant in each model. Overall, including an interaction term also improved the model fit slightly as the adjusted R-squared was slightly higher than in the model without interaction terms. The RSE was also lower in the models with interaction terms. 
 ```
 
-I arbitrarily selected the variables to include as interaction terms based on the correlation matrix. Variables that were highly correlated with another variable (e.g. >0.85) were used in the interaction terms. I only included one interaction term in each model at first. In each model, the interaction term was always highly statistically significant (p-value << 0). 
-
-I then tried including two interaction terms in one model and found that while both interaction terms were statistically significant, the `cylinders:displacement` term had a much higher p-value than the `horsepower:weight` term.  
 
 ```{r}
 # Including more than one interaction term in a model
 lm.fit7 = lm(mpg ~.-name+cylinders*displacement+horsepower*weight, data = Auto)
 summary(lm.fit7)
+# Interaction terms `cylinders:displacement` and `horsepower:weight` are statistically significant although `horsepower:weight` is highly statistically significant with a much smaller p-value than `cylinders:displacement`. 
+```
+
+```{r}
+# Including all possible interaction terms in model.
+lm.fit8 = lm(mpg~(.-name)*(.-name), data = Auto)
+summary(lm.fit8)
+# 21 interaction terms were included in this model. Statistically significant terms included: `displacement:weight`, `displacement:year`, `horsepower:acceleration`, `acceleration:year`, `acceleration:origin`, `year:origin`. 
 ```
 
 
