@@ -1,0 +1,165 @@
+---
+title: "Assignment 3 - Classification"
+author: "Jacqueline Liu"
+output: html_notebook
+---
+
+You will need to load the core library for the course textbook:
+```{r}
+library(ISLR)
+```
+
+```{r}
+# Loading other libraries 
+library(tidyr)
+library(stargazer)
+library(kableExtra)
+library(ggplot2)
+library(dplyr)
+library(GGally)
+library(ggthemes)
+library(ggExtra)
+library(caret)
+library(rms)
+```
+
+## Exercise 3.1
+
+In this problem, you will develop a model to predict whether a given car gets high or low gas mileage based on the `Auto` dataset from the `ISLR` package.
+
+```{r}
+str(Auto)
+summary(Auto)
+```
+
+```{r}
+Auto$originf <- factor(Auto$origin, labels = c("usa", "europe", "japan"))
+with(Auto, table(originf, origin))
+```
+
+(a) Create a binary variable, `mpg01`, that contains a 1 if `mpg` contains a value above its median, and a 0 if `mpg` contains a value below its median. You can compute the median using the `median()` function. Note you may find it helpful to use the `data.frame()` function to create a single data set containing both `mpg01` and the other `Auto` variables.
+
+```{r}
+mpg01 <- ifelse(Auto$mpg > (median(Auto$mpg)), 1, 0)
+Auto_new = data.frame(Auto, mpg01)
+str(Auto_new)
+summary(Auto_new)
+```
+
+
+(b) Explore the data graphically in order to investigate the association between `mpg01` and the other features. Which of the other features seem most likely to be useful in predicting `mpg01`? Scatterplots and boxplots may be useful tools to answer this question. Describe your findings.
+
+Scatterplot matrix seems to indicate that `dispacement`, `horsepower`, `weight`, `acceleration`, `year`, and `originf` may be useful in predicting `mpg01`. 
+
+I first investigated the relationship of the variables to the continuous `mpg` variable. I then plotted several facet plots to examine how the relationship between `mpg01` and other variables varies with the origin of the vehicle. Having checked the cross-tabulation of origin, it is clear that the data-set is slightly imbalanced and skewed towards cars from USA. 
+
+```{r}
+# Scatterplot matrix
+Auto_new %>% select(-name) %>%
+ggpairs(aes(color = originf, alpha = 0.2)) + theme_tufte(base_size = 8, base_family = "serif", ticks = TRUE)
+```
+
+```{r}
+# Boxplots 
+x <- Auto_new$cylinders
+y <- Auto_new$mpg
+boxplot(y ~ x, main = "", axes = FALSE, xlab = "", ylab = "", 
+pars = list(boxcol = "transparent", medlty = "blank", medpch=16, whisklty = c(1, 1),
+medcex = 0.7,  outcex = 0, staplelty = "blank"))
+axis(1, at=1:length(unique(x)), label=sort(unique(x)), tick=F, family="serif")
+axis(2, las=2, tick=F, family="serif")
+text(min(x)/4, max(y)/1, pos = 4, family="serif",
+"Boxplot of cylinders vs. miles per gallon (mpg)")
+```
+
+```{r}
+# Boxplot and scatterplot of horsepower vs. mpg
+p <- ggplot(Auto_new, aes(horsepower, mpg)) + geom_point(alpha = 0.5) + theme_tufte(ticks = FALSE) + theme(axis.title=element_blank(), axis.text=element_blank())
+p
+ggMarginal(p, type = "boxplot", size = 10, fill="transparent")
+```
+
+
+```{r}
+# Scatterplot and density plot of acceleration vs. mpg
+p1 <- ggplot(Auto_new, aes(acceleration, mpg)) + geom_point(alpha = 0.5) + theme_tufte(ticks=F) + theme(axis.title=element_blank(), axis.text=element_blank())
+p1
+ggMarginal(p1, type = "density", fill="transparent")
+```
+
+```{r}
+p3 <- ggplot(Auto_new, aes(mpg01, weight, color = factor(originf))) + geom_point(alpha = 0.5) + theme_tufte() + xlab("Miles per gallon of fuel (binary)") + ylab("Car weight") + 
+  theme(axis.title.x = element_text(vjust=-0.5), axis.title.y = element_text(vjust=1))
+
+p3 + facet_grid(cols = vars(Auto_new$originf))
+```
+
+```{r}
+p4 <- ggplot(Auto_new, aes(mpg, weight, color = factor(originf))) + geom_point(alpha = 0.5) + theme_tufte() + xlab("Miles per gallon of fuel") + ylab("Car weight") + 
+  theme(axis.title.x = element_text(vjust=-0.5), axis.title.y = element_text(vjust=1))
+p4 + facet_grid(cols = vars(Auto_new$originf))
+```
+
+
+
+```{r}
+p5 <- ggplot(Auto_new, aes(mpg01, acceleration, color = factor(originf))) + geom_point(alpha = 0.5) + theme_tufte() + xlab("Miles per gallon of fuel (binary)") + ylab("Acceleration") + 
+  theme(axis.title.x = element_text(vjust=-0.5), axis.title.y = element_text(vjust=1))
+p5 + facet_grid(cols = vars(Auto_new$originf))
+```
+
+
+(c) Split the data into a training set and a test set.
+
+```{r}
+train <- (Auto_new$year %% 2 == 0)
+Auto.train <- Auto_new[train, ]
+Auto.test <- Auto_new[!train, ]
+mpg01.test <- Auto_new$mpg01[!train]
+```
+
+(d) Perform logistic regression on the training data in order to predict `mpg01` using the variables that seemed most associated with `mpg01` in (b). What is the test error of the model obtained?
+
+```{r}
+model1 <- glm(mpg01 ~ cylinders + displacement + horsepower + weight + originf, data = Auto_new, family = binomial, subset = train)
+summary(model1)
+```
+
+```{r}
+probs <- predict(model1, Auto.test, type = "response")
+pred.glm <- rep(0, length(probs))
+pred.glm[probs > 0.5] <- 1
+table(pred.glm, mpg01.test)
+```
+
+
+```{r}
+mean(pred.glm != mpg01.test)
+# Test error rate of 12.63%. 
+```
+
+(e) Perform KNN on the training data, with several values of K, in order to predict `mpg01`. Use only the variables that seemed most associated with `mpg01` in (b). What test errors do you obtain? Which value of K seems to perform the best on this data set?
+
+```{r}
+train.X <- cbind(cylinders, weight, displacement, horsepower)[train, ]
+test.X <- cbind(cylinders, weight, displacement, horsepower)[!train, ]
+train.mpg01 <- mpg01[train]
+set.seed(1)
+pred.knn <- knn(train.X, test.X, train.mpg01, k = 1)
+table(pred.knn, mpg01.test)
+```
+
+## Exercise 3.2
+
+
+(a) Using a dataset of your choice develop a classification model. Provide a very basic description of what you are doing and why.
+
+(b) Implement the classifier (e.g. logistic regression) using implementations in user-written packages. Compare the results from the `glm` function in base R to the results from your alternative implementation (e.g. `lrm` function in `rms` package).
+
+(c) Use the `caret` package to calculate the confusion matrix. Discuss the key results like sensitivity, specificity, kappa, etc. Calculate precision, recall, and F1 using any implementation on CRAN.
+
+(d) Produce the ROC curve and discuss the results.
+
+(e) Assess class imbalance and implement any of the strategies to mitigate it.
+
+(f) Implement a naive Bayes classifier. Briefly describe why it may be useful here and highlight it's basic properties. Show the implementation and discuss the choice of parameters. 

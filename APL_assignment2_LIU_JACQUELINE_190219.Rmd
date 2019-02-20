@@ -1,0 +1,185 @@
+---
+title: "Assignment 2 - Linear Regression"
+author: "Jacqueline Liu"
+output:
+  html_document:
+    df_print: paged
+---
+
+This assignment is based on the material covered in James et al. We will subsequently open up solutions to the problem sets.
+
+## Exercise 2.1
+
+This question involves the use of multiple linear regression on the `Auto` data set. So load the data set from the `ISLR` package first.
+
+If the following code chunk returns an error, you most likely have to install the `ISLR` package first. Use `install.packages("ISLR")` if this is the case.
+
+```{r}
+data("Auto", package = "ISLR")
+```
+
+
+(a) Produce a scatterplot matrix which includes all of the variables in the data set.
+
+```{r}
+pairs(Auto)
+# try using ggpairs (R package "GGally")/ cpairs 
+# Always run a quick visualisation of the relationship of the variables as a first step 
+# E.g. helps gives a hint on multicollinearity problems 
+```
+
+(b) Compute the matrix of correlations between the variables using the function `cor()`. You will need to exclude the `name` variable, which is qualitative.
+
+```{r}
+cor(subset(Auto, select=-name))
+```
+
+(c) Use the `lm()` function to perform a multiple linear regression with `mpg` as the response and all other variables except `name` as the predictors. Use the `summary()` function to print the results. Comment on the output. For instance:
+
+```{r}
+lm.fit = lm(mpg ~.-name, data = Auto)
+summary(lm.fit)
+# Alternatives: subset Auto dataset, use -c(v1, v2) if you want to exclude more than 1 variable 
+# If the goal is inference, then you would look at the p-values
+# Create print-ready tables with stargaze - include type = html, results = asis 
+```
+
+    i. Is there a relationship between the predictors and the response?
+    ii. Which predictors appear to have a statistically significant relationship to the response?
+    iii. What does the coefficient for the `year` variable suggest?  
+
+**i. Is there a relationship between the predictors and the response?** 
+
+Yes. There is a relationship between the predictors and the response. We tested this by fitting a multiple regression model and testing the null hypothesis that:
+$$H_0: \beta_{cylinders} = \beta_{displacement} = \beta_{horsepower} 
+= \beta_{weight} = \beta_{acceleration} = \beta_{year} = \beta_{origin} = 0$$
+The F-statistic returned was very large at 252.4. Furthermore, the p-value associated with the F-statistic was very small. This enables us to reject the null hypothesis that there is no relationship between the predictors.  
+
+
+**ii. Which predictors appear to have a statistically significant relationship to the response?**
+
+The predictors `displacement`, `weight`, `year`, and `origin` appear to have a statistically significant relationship to the response at the 99% significance level. 
+
+
+**iii. What does the coefficient for the `year` variable suggest?**
+
+The coefficient for the `year` variable suggests that as the year increases by 1 year, the miles-per-gallon (MPG) increases by 0.75 units. This means that newer cars have higher MPG and are more fuel efficient. 
+
+(d) Use the `*` and `:` symbols to fit linear regression models with interaction effects. Do any interactions appear to be statistically significant?
+
+
+I arbitrarily selected the variables to include as interaction terms based on the correlation matrix. Variables that were highly correlated with another variable (e.g. >0.85) were used in the interaction terms. I only included one interaction term in each model at first. In each model, the interaction term was always highly statistically significant (p-value << 0). 
+
+I then tried including two interaction terms in one model and found that while both interaction terms were statistically significant, the `cylinders:displacement` term had a much higher p-value than the `horsepower:weight` term.  
+
+Including as many interaction terms as possible in one model (21 interaction terms) resulted in 6 interaction terms that were statistically significant at the 95% significance level. Although the adjusted R-squared for this model was the highest (where the predictors appeared to explain about 88% of the variation in the response), including so many interaction terms in one model may have led me to over-fit this particular model. 
+
+```{r}
+# Including interaction terms
+lm.fit1 = lm(mpg ~.-name+cylinders*displacement, data = Auto)
+summary(lm.fit1)
+
+lm.fit2 = lm(mpg ~.-name+cylinders*weight, data = Auto)
+summary(lm.fit2)
+
+lm.fit3 = lm(mpg ~.-name+displacement*weight, data = Auto)
+summary(lm.fit3)
+
+lm.fit4 = lm(mpg ~.-name+displacement*horsepower, data = Auto)
+summary(lm.fit4)
+
+lm.fit5 = lm(mpg ~.-name+horsepower*cylinders, data = Auto)
+summary(lm.fit5)
+
+lm.fit6 = lm(mpg ~.-name+weight*horsepower, data = Auto)
+summary(lm.fit6)
+# Interaction terms were highly statistically significant in each model. Overall, including an interaction term also improved the model fit slightly as the adjusted R-squared was slightly higher than in the model without interaction terms. The RSE was also lower in the models with interaction terms. 
+```
+
+
+```{r}
+# Including more than one interaction term in a model
+lm.fit7 = lm(mpg ~.-name+cylinders*displacement+horsepower*weight, data = Auto)
+summary(lm.fit7)
+# Interaction terms `cylinders:displacement` and `horsepower:weight` are statistically significant although `horsepower:weight` is highly statistically significant with a much smaller p-value than `cylinders:displacement`. 
+```
+
+```{r}
+# Including all possible interaction terms in model.
+lm.fit8 = lm(mpg~(.-name)*(.-name), data = Auto)
+summary(lm.fit8)
+# 21 interaction terms were included in this model. Statistically significant terms included: `displacement:weight`, `displacement:year`, `horsepower:acceleration`, `acceleration:year`, `acceleration:origin`, `year:origin`. 
+```
+
+
+## Exercise 2.2
+
+This question should be answered using the `Carseats` dataset from the `ISLR` package. So load the data set from the `ISLR` package first.
+
+```{r}
+data("Carseats", package = "ISLR")
+```
+
+```{r}
+# Inspecting structure of dataset
+str(Carseats)
+
+# Summary
+summary(Carseats)
+```
+
+
+(a) Fit a multiple regression model to predict `Sales` using `Price`,
+`Urban`, and `US`.
+
+```{r}
+lm.fitsales = lm(Sales ~ Price + Urban + US, data = Carseats)
+summary(lm.fitsales)
+```
+
+(b) Provide an interpretation of each coefficient in the model. Be
+careful -- some of the variables in the model are qualitative!
+
+* `Price`: The model suggests that there is a negative relationship between `Price` and `Sales`, and that this relationship is highly statistically significant (p-value < 0). As the price increases by 1 unit (e.g. dollar), sales decrease by approximately 0.05 units. 
+
+* `UrbanYes`: The model suggests that there is no significant relationship between `Urban` and `Sales`. Nonetheless, the coefficient suggests that there may be a negative relationship between these variables such that if the individual observation is in an urban area, sales would decrease by approximately 0.02 units. 
+* `USYes`: The model suggests that there is a positive relationship between `US` and `Sales`, and that this relationship is highly statistically significant (p-value < 0). If the individual observation is in the US, sales would increase by approximately 1.20 units. 
+
+* Intercept: The coefficient for the intercept is also highly statistically significant (p-value < 0). If the price is 0 units, and the individual observation is not in an urban area and not in the US, sales would increase by approximately 13 units. 
+
+
+(c) Write out the model in equation form, being careful to handle the qualitative variables properly.
+
+
+$$Sales = 13.04 - 0.05(Price) - 0.02(UrbanYes) + 1.20(USYes) + \epsilon$$
+
+
+(d) For which of the predictors can you reject the null hypothesis $H_0 : \beta_j =0$?
+
+
+I can reject the null hypothesis for `Price` and `USYes` based on their respective p-values, which are very small (p-value << 0). 
+
+
+(e) On the basis of your response to the previous question, fit a smaller model that only uses the predictors for which there is evidence of association with the outcome.
+
+```{r}
+lm.fitsales1 = lm(Sales ~ Price + US, data = Carseats)
+summary(lm.fitsales1)
+```
+
+
+(f) How well do the models in (a) and (e) fit the data?
+
+The models do not seem to fit the data very well as the only about one-third of the variation in `Sales` can be explained by the predictors in the models. Specifically, the adjusted R-squared values for models (a) and (e) are 0.2335 and 0.2354 respectively. This means that about 23.35% of the variation in `Sales` can be explained by the variation in the predictors (`Price`, `UrbanYes`, `USYes`) in model (a). While 23.54% of the variation in `Sales` can be explained by the variation in the predictors (`Price`, `USYes`) in model (e).   
+
+In addition, the RSE and F-statistics for models (a) and (e) do not differ much, meaning that neither model (a) nor (e) necessarily perform better than the other. 
+
+
+(g) Using the model from (e), obtain 95% confidence intervals for the coefficient(s).
+
+```{r}
+confint(lm.fitsales1, level = 0.95)
+# kable from knitr - to present the table in html format 
+# kable extra package for customisation 
+```
+
