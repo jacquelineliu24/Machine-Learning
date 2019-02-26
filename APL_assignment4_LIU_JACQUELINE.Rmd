@@ -1,0 +1,144 @@
+---
+title: "Assignment 4 - Resampling Methods"
+author: "Jacqueline Liu"
+output: html_notebook
+---
+
+## Exercise 4.1
+
+In this exercise you will use the `glm()` and `predict.glm()` functions, and a `for` loop to compute the LOOCV error for a simple logistic regression model on the `Weekly` data set. 
+
+```{r}
+data("Weekly", package = "ISLR")
+```
+
+```{r message=FALSE, warning=FALSE}
+# Loading other libraries 
+library(boot)
+library(caret)
+library(bestglm)
+```
+
+```{r}
+# Inspecting the dataset
+str(Weekly)
+summary(Weekly)
+# `Weekly` describes percentage returns for the S&P 500 stock index between 1990 and 2010. 1089 observations. 
+```
+
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+# Year: Year that observation was recorded
+# Lag1: Percentage return for previous week 
+# Lag2: Percentage return for 2 weeks before 
+# Lag3: Percentage return for 3 weeks before 
+# Lag4: Percentage return for 4 weeks before 
+# Lag5: Percentage return for 5 weeks before 
+# Volume: Volume of shares traded (avg. no. of daily shares traded in billions)
+# Today: Percentage return for this week 
+# Direction: Factor with levels Down and Up indicating whether the market had a positive or negative return on a given week
+```
+
+
+ (a) Fit a logistic regression model that predicts `Direction` using `Lag1` and `Lag2`.
+ 
+```{r}
+model = glm(Direction ~ Lag1 + Lag2, data = Weekly, family = binomial)
+summary(model)
+```
+
+
+ (b) Fit a logistic regression model that predicts `Direction` using `Lag1` and `Lag2` using *all but the first observation*.
+
+```{r}
+model1 = glm(Direction ~ Lag1 + Lag2, data = Weekly[-1, ], family = binomial)
+summary(model1)
+```
+
+
+ (c) Use the model from (b) to predict the direction of the first observation. You can do this by predicting that the first observation will go up if `P(Direction="Up"|Lag1, Lag2) > 0.5`. Was this observation correctly classified?
+
+No, the observation was not correctly classified. The observation was classified as "1", which indicates that the direction should be 'Up'. However, the true direction was 'Down' (i.e., the observation should have been classifed as "0").
+
+```{r}
+predict(model1, Weekly[1, ], type = "response") > 0.5
+
+# Checking against the observation in the dataset
+Weekly[1, 9]
+```
+
+ (d) Write a `for` loop from i=1 to i=n, where n is the number of observations in the data set, that performs each of the following steps:
+
+    i. Fit a logistic regression model using all but the i-th observation to predict `Direction` using `Lag1` and `Lag2`.
+    
+    ii. Compute the posterior probability of the market moving up for the i-th observation. 
+    
+    iii. Use the posterior probability for the i-th observation in order to predict whether or not the market moves up. 
+    
+    iv. Determine whether or not an error was made in predicting the direction for the i-th observation. If an error was made, then indicate this as a 1, and otherwise indicate it as a 0.
+
+```{r}
+cv.error = rep(0, 1089)
+for(i in 1:1089){
+  glm.fit = glm(Direction ~ Lag1 + Lag2, data = Weekly[-i, ], family = binomial)
+  up = predict(glm.fit, Weekly[i, ], type = "response") > 0.5
+  true.up = Weekly[i, ]$Direction == "Up"
+  if(up != true.up)
+    cv.error[i] = 1
+}
+sum(cv.error)
+summary(cv.error)
+# 490 errors were made. 
+```
+
+
+ (e) Take the average of the n numbers obtained in (d)iv in order to obtain the LOOCV estimate for the test error. Comment on the results.
+ 
+The average, that is, the LOOCV estimate for the test error was 0.45 (rounded up to 2 decimal places). This means that on average, the model predicts results incorrectly about 45% of the time. 
+ 
+```{r}
+mean(cv.error)
+```
+ 
+ (f) Compare your results to implementation using `cv.glm` function. 
+ 
+The LOOCV test error rate generated from the `cv.glm` function is approximately 0.25 (rounded up to 2 decimal places) or 25%. This means that on average, the model predicts results incorrectly about 25% of the time. This error rate is much lower than that generated from the manual implementation of LOOCV. This indicates that LOOCV estimates are highly variable. This could be due to the fact that the estimates for the MSE are based on only one observation from the dataset. 
+
+```{r}
+# Set K = 1089 to tell cv.glm to run LOOCV 
+glm.fit1 <- glm(Direction ~ Lag1 + Lag2, data = Weekly, family = binomial)
+cv.error1 = cv.glm(Weekly, glm.fit1, K = 1089)
+cv.error1$delta
+```
+
+ 
+ (g) Explore any alternative implementations of cross-validation available in userwritten packages (e.g. in `caret`). Implement at least one of them and compare your results with (e) and (f) above.
+
+Using the `trainControl()` function from the `caret` package, I found that the LOOCV test error rate was (1 - 0.55) = 0.45 or 45%, which is comparable to the test error rate obtained in the manual implementation in (e). 
+
+The test error rates for 10-Fold Cross Validation and Bootstrap resampling were also about 45%. 
+
+```{r}
+# (1) LOOCV with `caret`
+# Using trainControl
+# Create object to store trainControl command
+lcontrol <- trainControl(method = "LOOCV")
+
+# Use train() function 
+set.seed(1)
+glm.fit2 <- train(Direction ~ Lag1 + Lag2, data = Weekly, method = "glm", trControl = lcontrol)
+glm.fit2
+```
+
+```{r}
+# (2) 10-Fold Cross-Validation with `caret`
+tcontrol <- trainControl(method = "cv", number = 10)
+glm.fit3 <- train(Direction ~ Lag1 + Lag2, data = Weekly, trControl = tcontrol, method = "glm")
+glm.fit3
+```
+
+```{r}
+# (3) Bootstrap resampling with `caret`
+bcontrol <- trainControl(method = "boot", number = 1000)
+glm.fit4 <- train(Direction ~ Lag1 + Lag2, data = Weekly, trControl = bcontrol, method = "glm")
+glm.fit4
+```

@@ -49,7 +49,7 @@ summary(Auto_new)
 
 (b) Explore the data graphically in order to investigate the association between `mpg01` and the other features. Which of the other features seem most likely to be useful in predicting `mpg01`? Scatterplots and boxplots may be useful tools to answer this question. Describe your findings.
 
-Scatterplot matrix seems to indicate that `dispacement`, `horsepower`, `weight`, `acceleration`, `year`, and `originf` may be useful in predicting `mpg01`. 
+Scatterplot matrix seems to indicate that `cylinders`, `dispacement`, `horsepower`, `weight`, `acceleration`, `year`, and `originf` may be useful in predicting `mpg01`. 
 
 I first investigated the relationship of the variables to the continuous `mpg` variable. I then plotted several facet plots to examine how the relationship between `mpg01` and other variables varies with the origin of the vehicle. Having checked the cross-tabulation of origin, it is clear that the data-set is slightly imbalanced and skewed towards cars from USA. 
 
@@ -57,6 +57,11 @@ I first investigated the relationship of the variables to the continuous `mpg` v
 # Scatterplot matrix
 Auto_new %>% select(-name) %>%
 ggpairs(aes(color = originf, alpha = 0.2)) + theme_tufte(base_size = 8, base_family = "serif", ticks = TRUE)
+
+# Creating boxplots 
+# Create function first 
+# '!!' 
+# plot.grid 
 ```
 
 ```{r}
@@ -112,54 +117,451 @@ p5 + facet_grid(cols = vars(Auto_new$originf))
 (c) Split the data into a training set and a test set.
 
 ```{r}
-train <- (Auto_new$year %% 2 == 0)
-Auto.train <- Auto_new[train, ]
-Auto.test <- Auto_new[!train, ]
-mpg01.test <- Auto_new$mpg01[!train]
+# The dataset is quite small with 392 observations. Randomly splitting the dataset 60/40: 
+set.seed(1)
+# For replicating results 
+# To produce the same series of random numbers. 
+
+# Shuffle rows
+rows <- sample(nrow(Auto_new))
+
+# Randomly order data
+Auto_new <- Auto_new[rows, ]
+
+# Identify row to split on 
+split <- round(nrow(Auto_new)*0.60)
+
+# Create train 
+train <- Auto_new[1:split, ]
+
+# Create test
+test <- Auto_new[(split+1):nrow(Auto_new), ]
+
+# Check dimensions
+dim(train)
+dim(test)
+
+# Optimal split: see cross-validation chapters/ session 
+# See helper function in caret package 
 ```
 
 (d) Perform logistic regression on the training data in order to predict `mpg01` using the variables that seemed most associated with `mpg01` in (b). What is the test error of the model obtained?
 
+The test error was 0.076 or 7.6%. 
+
 ```{r}
-model1 <- glm(mpg01 ~ cylinders + displacement + horsepower + weight + originf, data = Auto_new, family = binomial, subset = train)
+#set.seed(1)
+model1 <- glm(mpg01 ~ cylinders + displacement + horsepower + weight + originf, data = train, family = binomial)
 summary(model1)
 ```
 
 ```{r}
-probs <- predict(model1, Auto.test, type = "response")
-pred.glm <- rep(0, length(probs))
-pred.glm[probs > 0.5] <- 1
-table(pred.glm, mpg01.test)
+test.predict = predict(model1, test, type = "response")
+test.predict.class = ifelse(test.predict > 0.5, 1, 0)
+table(test$mpg01, test.predict.class, dnn = c("Actual Mileage", "Predicted Mileage"))
+# use confusionMatrix from the caret package 
+
 ```
 
-
 ```{r}
-mean(pred.glm != mpg01.test)
-# Test error rate of 12.63%. 
+mean(test.predict.class != test$mpg01)
+# Test error rate of 0.076 or 7.6%
 ```
 
 (e) Perform KNN on the training data, with several values of K, in order to predict `mpg01`. Use only the variables that seemed most associated with `mpg01` in (b). What test errors do you obtain? Which value of K seems to perform the best on this data set?
 
+Test errors for different values of K: 
+
+* k = 3: 0.070 (7%)
+
+* k = 5: 0.082 (8.2%)
+
+* k = 20: 0.089 (8.9%)
+
+* k = 80: 0.096 (9.6%)
+
+k = 3 seems to yield the lowest test error of 7%. 
+
 ```{r}
-train.X <- cbind(cylinders, weight, displacement, horsepower)[train, ]
-test.X <- cbind(cylinders, weight, displacement, horsepower)[!train, ]
-train.mpg01 <- mpg01[train]
+# Effectiveness of knn diminishes with higher-dimension datasets; better for low dimensions 
+# Always choose the most parsimonious model 
+# Subset data set with variables most associated with `mpg01` in (b): cylinders, displacement,  horsepower, weight, originf
+head(Auto_new)
+Auto.subset <- Auto_new[,c(2,3,4,5,10,11)]
+
+# Standardise variables for KNN 
+#Auto.knn <- scale(Auto.subset[,-5])
+Auto.knn <- scale(Auto.subset[,-5])
+
+# Set seed
 set.seed(1)
-pred.knn <- knn(train.X, test.X, train.mpg01, k = 1)
-table(pred.knn, mpg01.test)
+
+# Divide into training and test data (60/40 split)
+# Shuffle rows
+rows <- sample(nrow(Auto.knn))
+
+# Randomly order data
+Auto.knn <- Auto.knn[rows, ]
+
+# Identify row to split on 
+split <- round(nrow(Auto.knn)*0.60)
+
+# Create train 
+train.k <- Auto.knn[1:split, ]
+
+# Create test
+test.k <- Auto.knn[(split+1):nrow(Auto.knn), ]
+
+# Check dimensions
+dim(train.k)
+dim(test.k)
+length(train.k)
+```
+
+```{r}
+# KNN with k = 5
+library(class)
+set.seed(1)
+k1 <- knn(train.k[,-5], test.k[,-5], train.k[,5], k = 5)
+mean(test.k[,5] != k1)
+```
+
+```{r}
+# KNN with k = 20
+library(class)
+set.seed(1)
+k1 <- knn(train.k[,-5], test.k[,-5], train.k[,5], k = 20)
+mean(test.k[,5] != k1)
+```
+
+```{r}
+# KNN with k = 80
+library(class)
+set.seed(1)
+k1 <- knn(train.k[,-5], test.k[,-5], train.k[,5], k = 80)
+mean(test.k[,5] != k1)
+```
+
+```{r}
+# KNN with k = 3
+library(class)
+set.seed(1)
+k1 <- knn(train.k[,-5], test.k[,-5], train.k[,5], k = 3)
+mean(test.k[,5] != k1)
 ```
 
 ## Exercise 3.2
 
-
 (a) Using a dataset of your choice develop a classification model. Provide a very basic description of what you are doing and why.
+
+The dataset used is the "Boston" dataset from the `MASS` package in R. The dataset has 506 observations with 14 variables and records housing values in the suburbs of Boston. I would like to predict the per capita crime rate based on several socio-economic indicators. One such indicator could be housing values. Other indicators that could be considered are housing size, presence of industry (non-retail business), pupil-teacher ratio, etc. A classification model (e.g. logistic regression) could be run to predict the probability of the presence of low or high crime rate, which could be informative for allocation of law enforcement/ resources. 
+
+The variables in the dataset are: 
+
+* `crim`: per capita crime rate by town
+
+* `zn`: proportion of residential land zoned for lots over 25,000 sq. ft.
+
+* `indus`: proportion of non-retail business acres per town
+
+* `chas`: Charles River dummy variable (=1 if tract bounds river; 0 otherwise)
+
+* `nox`: nitrogen oxides concentration (parts per 10 million)
+
+* `rm`: average number of rooms per dwelling 
+
+* `age`: proportion of owner-occupied units built prior to 1940
+
+* `dis`: weighted mean of distances to five Boston employment centres
+
+* `rad`: index of accessibility to radial highways 
+
+* `tax`: full-value property-tax rate per \$10,000
+
+* `ptratio`: pupil-teacher ratio by town 
+
+* `black`: 1000(Bk - 0.63)^2 where Bk is the proportion of blacks by town 
+
+* `lstat`: lower status of the population (percent)
+
+* `medv`: median value of owner-occupied homes in \$1000s. 
+
+I re-classified some of the variables to prepare the dataset for analysis. I re-classified average room size by grouping them into 3 classes: "small" (if less than 4 rooms), "medium" (4 to 6 rooms), and "large" (more than or equal to 7 rooms). I also created a new binary variable for the response, `crim` (`crim01`). 
+
+```{r}
+library("MASS")
+data("Boston")
+str(Boston)
+summary(Boston)
+Boston$rmsize <- ifelse(Boston$rm < 4, 1, 
+                        ifelse(Boston$rm >= 4 & Boston$rm < 7, 2, 3))
+table(Boston$rmsize)
+Boston$rmsize <- factor(Boston$rmsize, labels = c("small", "medium", "large"))
+summary(Boston$rmsize)
+```
+
+```{r}
+Boston %>%
+ggpairs(aes(color = rmsize, alpha = 0.2)) + theme_tufte(base_size = 8, base_family = "serif", ticks = TRUE)
+```
+
+
+```{r}
+# Creating a binary variable for crime rate: crim01
+# Assigning high crime rate (1) to crime rates equal and above the median
+crim01 <- ifelse(Boston$crim >= (median(Boston$crim)), 1, 0)
+Boston1 = data.frame(Boston, crim01)
+str(Boston1)
+summary(Boston1)
+```
+
+```{r}
+Boston1 %>%
+ggpairs(aes(color = rmsize, alpha = 0.2)) + theme_tufte(base_size = 8, base_family = "serif", ticks = TRUE)
+```
+
+
+```{r}
+plot1 <- ggplot(Boston1, aes(factor(crim01), medv, color = rmsize)) + geom_jitter(alpha = 0.5) + theme_tufte()
+plot1
+# Areas with a higher median value of owner-occupied homes seem to have lower crime rates
+```
+
+```{r}
+plot2 <- ggplot(Boston1, aes(factor(crim01), indus, color = rmsize)) + geom_boxplot(alpha = 0.5) + theme_tufte()
+plot2 + facet_grid(.~ rmsize)
+# Higher proportion of non-retail business in an area is associated with higher crime rates
+
+plot3 <- ggplot(Boston1, aes(factor(crim01), nox, color = rmsize)) + geom_boxplot(alpha = 0.5) + theme_tufte()
+plot3 + facet_grid(.~ rmsize)
+# Higher NOx emissions in an area is also associated with higher crime rates
+
+plot4 <- ggplot(Boston1, aes(factor(crim01), age, color = rmsize)) + geom_boxplot(alpha = 0.5) + theme_tufte()
+plot4 + facet_grid(.~ rmsize)
+# Newer houses seem to be associated with lower crime rates 
+
+plot5 <- ggplot(Boston1, aes(factor(crim01), tax, color = rmsize)) + geom_boxplot(alpha = 0.5) + theme_tufte()
+plot5 + facet_grid(.~ rmsize)
+# Higher levels of property tax rate seem to be associated with higher crime rates
+
+plot6 <- ggplot(Boston1, aes(factor(crim01), ptratio, color = rmsize)) + geom_boxplot(alpha = 0.5) + theme_tufte()
+plot6 + facet_grid(.~ rmsize)
+# Lower pupil-teacher ratios may or may not be associated with crime rate levels 
+
+plot7 <- ggplot(Boston1, aes(factor(crim01), black, color = rmsize)) + geom_boxplot(alpha = 0.5) + theme_tufte()
+plot7 + facet_grid(.~ rmsize)
+# Proportion of black people in an area may or may not be associated with crime rate levels 
+
+plot8 <- ggplot(Boston1, aes(factor(crim01), lstat, color = rmsize)) + geom_boxplot(alpha = 0.5) + theme_tufte()
+plot8 + facet_grid(.~ rmsize)
+# Areas with higher percentage of low-income population could be associated with higher crime rates
+```
+
+```{r}
+# Checking frequency distribution of key predictor: medv 
+ggplot(Boston1, aes(medv)) + geom_histogram() + theme_tufte()
+```
+
 
 (b) Implement the classifier (e.g. logistic regression) using implementations in user-written packages. Compare the results from the `glm` function in base R to the results from your alternative implementation (e.g. `lrm` function in `rms` package).
 
+The regression model using the `glm` function in base R yielded a lower test error rate of 17.8% while the model using the `lrm` function in the `rms` package yielded a slightly higher test error rate of 19.8%. However, the model using the `lrm` function yielded lower standard errors indicating that it may be a slightly more efficient model. 
+
+```{r}
+# Checking for class bias in response variable - Balanced  
+table(Boston1$crim01)
+
+# Create test and training set
+set.seed(1)
+# For replicating results 
+
+# Shuffle rows
+rows <- sample(nrow(Boston1))
+
+# Randomly order data
+Boston1 <- Boston1[rows, ]
+
+# Identify row to split on 
+split <- round(nrow(Boston1)*0.60)
+
+# Create train 
+bostontrain <- Boston1[1:split, ]
+
+# Create test
+bostontest <- Boston1[(split+1):nrow(Boston1), ]
+
+# Check dimensions
+dim(bostontrain)
+dim(bostontest)
+```
+
+
+```{r}
+# Run logistic regression with `glm`
+set.seed(1)
+model3 <- glm(crim01 ~ medv + indus + nox + rmsize + age + lstat, data = bostontrain, family = binomial)
+summary(model3)
+```
+
+
+```{r}
+test.predict = predict(model3, bostontest, type = "response")
+test.predict.class = ifelse(test.predict > 0.5, 1, 0)
+table(bostontest$crim01, test.predict.class, dnn = c("Actual Crime Rate", "Predicted Crime Rate"))
+```
+
+```{r}
+mean(test.predict.class != bostontest$crim01)
+```
+
+
+```{r}
+# Run logistic regression with `lrm`
+library(rms)
+model4 <- lrm(crim01 ~ medv + indus + nox + rmsize + age + lstat, data = bostontrain)
+print(model4, digits=4, strata.coefs = FALSE, coefs = TRUE)
+```
+
+
+```{r}
+lrmpredict = predict(model4, newdata = bostontest)
+lrmpredict.class = ifelse(lrmpredict > 0.5, 1, 0)
+table(bostontest$crim01, lrmpredict.class, dnn = c("Actual Crime Rate", "Predicted Crime Rate"))
+```
+
+```{r}
+mean(lrmpredict.class != bostontest$crim01)
+```
+
 (c) Use the `caret` package to calculate the confusion matrix. Discuss the key results like sensitivity, specificity, kappa, etc. Calculate precision, recall, and F1 using any implementation on CRAN.
+
+The model appears to have a relatively high accuracy rate of 0.82 (82%). 
+The number of true positive cases ("Low crime rate") was 88 (out of 106 cases), and number of true negative cases ("High crime rate") was 78 (out of 96 cases). The prevalence (or prior probability) was 0.5248. 
+
+* *Sensitivity*: Sensitivity was 0.8302. This means that 83% of samples with the event were predicted accurately.
+
+* *Specificity*: Specificity was 0.8125. This means that 81% of samples without the event were predicted accurately. The false-positive rate was then (1-0.8125) = 0.1875 or 18.8%. 
+
+* *Kappa*: Kappa statistic was 0.6427, which is relatively close to 1. This means that there is some concordance between predicted and observed classes. 
+
+* *Precision*: Precision was 0.8302 or 83%, which means that the model is quite precise.
+
+* *Recall*: Recall was 0.8302 or 83%, which is also a relatively high rate of recall.
+
+* *F1*: F1 was 0.8302 or 83%. 
+
+```{r}
+# Convert crim01 and test.predict.class to factors: 
+bostontest$crimtest <- factor(bostontest$crim01)
+p_class <- factor(test.predict.class, levels = levels(bostontest[["crimtest"]])) 
+```
+
+```{r}
+# Create confusion matrix
+confusionMatrix(p_class, bostontest$crimtest, mode = "everything")
+# Precision : 0.8302
+# Recall : 0.8302          
+# F1 : 0.8302
+```
 
 (d) Produce the ROC curve and discuss the results.
 
+The ROC curve appears to be plotted relatively far away from the baseline (the diagonal line). The Area Under the Curve (AUC) is 0.923, which is very close to 1, indicating that the model performs quite well. 
+
+```{r}
+# Store actual and predicted results in a dataframe
+p <- data.frame(crim01 = bostontest$crim01)
+p$results <- predict(model3, bostontest, type = "response")
+
+#Plot ROC curve
+library(pROC)
+roc <- roc(p$crim01, p$results, levels = levels(as.factor(p$crim01)))
+roc
+# Area under the curve: 0.9213
+# Set bounds for y and x axis 
+```
+
+```{r}
+# Plot ROC curve
+plot(roc, legacy.axes = TRUE)
+```
+
 (e) Assess class imbalance and implement any of the strategies to mitigate it.
 
+If there is severe class imbalance, we should expect the ROC curve and the lift curve to be very similar. To assess if there is class imbalance, I plotted a lift curve and found that it was very dissimilar to the ROC curve, indicating that classes are already quite balanced. However, the lift plot also indicated that the model may actually not be informative. 
+
+One way to mitigate the presence of class imbalance is to alter the cut-off/ threshold, which could affect the predictive power of the model. Since the threshold was initially set at p > 0.5, I used different threshold levels to assess the effect on performance metrics including the test error rate, sensitivity and specificity. 
+
+A lower threshold of p > 0.3 improved the sensitivity of the model but decreased specificity. The test error rate was also higher at 20%. While a slightly higher threshold using Youden's J index lowered the sensitivity of the model but achieved very high specificity. The test error rate was then lower at 15.8%. This means that with a lower threshold, the model predicts events more accurately. A higher threshold on the other hand allows the model to predict non-events more accurately.  
+
+```{r}
+# Assess class imbalance 
+# Plot lift curve
+p$crim01 <- as.factor(p$crim01)
+labs <- c(results = "Logistic Regression")
+lift <- lift(x = crim01 ~ results, data = p)
+lift
+#plot(roc, legacy.axes = TRUE)
+xyplot(lift, auto.key = list(columns = 2, lines = TRUE, points= FALSE))
+# The lift curve is very different from the ROC curve, which could indicate that classes are quite balanced. 
+```
+
+```{r}
+# Deciding on a threshold - depends on your research question 
+# Using a different threshold
+# Confusion matrix for initial threshold of p > 0.5 
+test.predict = predict(model3, bostontest, type = "response")
+test.predict.class = ifelse(test.predict > 0.5, 1, 0)
+tab1 <- table(bostontest$crim01, test.predict.class, dnn = c("Actual Crime Rate", "Predicted Crime Rate"))
+
+# Confusion matrix for intial threshold of p > 0.9
+new.predict = predict(model3, bostontest, type = "response")
+new.predict.class = ifelse(new.predict > 0.3, 1, 0)
+tab2 <- table(bostontest$crim01, new.predict.class, dnn = c("Actual Crime Rate", "Predicted Crime Rate"))
+
+# Confusion matrix for threshold determined by pROC package 
+thresh <- coords(roc, x = "best", best.method = "youden")
+new.predict.class1 = ifelse(new.predict > thresh, 1, 0)
+tab3 <- table(bostontest$crim01, new.predict.class1, dnn = c("Actual Crime Rate", "Predicted Crime Rate"))
+
+tab1.e <- mean(test.predict.class != bostontest$crim01)
+tab2.e <- mean(new.predict.class != bostontest$crim01)
+tab3.e <- mean(new.predict.class1 != bostontest$crim01)
+
+sen1 <- sensitivity(tab1)
+sen2 <- sensitivity(tab2)
+sen3 <- sensitivity(tab3)
+
+spec1 <- specificity(tab1)
+spec2 <- specificity(tab2)
+spec3 <- specificity(tab3)
+
+error.rate <- tibble(Threshold = c("p > 0.5", "p > 0.3", "Youden's J index"), Error_Rate = c(tab1.e, tab2.e, tab3.e), Sensitivity = c(sen1, sen2, sen3), Specificity = c(spec1, spec2, spec3)) 
+error.rate
+```
+
+
 (f) Implement a naive Bayes classifier. Briefly describe why it may be useful here and highlight it's basic properties. Show the implementation and discuss the choice of parameters. 
+
+The naive Bayes model is a conditional probability model, which simplifies probabilities of the predictor values by assuming that all of the predictors are independent of the others. Naive Bayes classifiers may be used because they can be trained efficiently and perform competitively. Another advantage of naive Bayes classifiers is that it can be used on a small number of training data to estimate probabilities. Since the dataset is not very large, I applied the naive Bayes model on a sample that is resampled through cross-validation (10-fold). The Kappa here is 64% (which is similar to that in the logistic regression model) and accuracy is also comparable to that in the logistic regression model. Overall, the performance of the naive Bayes classifier is comparable to that of the logistic regression. 
+
+```{r}
+# Naive Bayes still works well even though the core assumption of independence of predictors is violated 
+# Testing for independence...
+
+# Create naive Bayes classifier
+library(caret)
+library(e1071)
+library(klaR)
+# using naiveBayes() function 
+x = Boston1[,-16]
+x = x[,-1]
+y = Boston1$crim01
+yf = as.factor(y)
+
+nbmodel = train(x, yf, method = 'nb', trControl = trainControl(method = 'cv', number = 10))
+```
+
+```{r}
+nbmodel
+```
