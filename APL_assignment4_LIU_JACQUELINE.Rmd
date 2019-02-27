@@ -101,12 +101,24 @@ mean(cv.error)
  
  (f) Compare your results to implementation using `cv.glm` function. 
  
-The LOOCV test error rate generated from the `cv.glm` function is approximately 0.25 (rounded up to 2 decimal places) or 25%. This means that on average, the model predicts results incorrectly about 25% of the time. This error rate is much lower than that generated from the manual implementation of LOOCV. This indicates that LOOCV estimates are highly variable. This could be due to the fact that the estimates for the MSE are based on only one observation from the dataset. 
+The LOOCV test error rate generated from the `cv.glm` function is approximately 0.45 or 45%, which is comparable to that of the test error rate generated from the manual implementation in (e). 
 
 ```{r}
 # Set K = 1089 to tell cv.glm to run LOOCV 
+# Reponse is binary. Create cost function to include in cv.glm() argument.
+r <- Weekly$Direction
+pi <- predict(model, Weekly, type = "response")
+
+cost <- function(r, pi){
+  weight1 = 1
+  weight0 = 1
+  c1 = (r==1)&(pi < 0.5)
+  c0 = (r==0)&(pi >= 0.5)
+  return(mean(weight1*c1 + weight0*c0))
+}
+
 glm.fit1 <- glm(Direction ~ Lag1 + Lag2, data = Weekly, family = binomial)
-cv.error1 = cv.glm(Weekly, glm.fit1, K = 1089)
+cv.error1 = cv.glm(Weekly, glm.fit1, cost, K = 1089)
 cv.error1$delta
 ```
 
@@ -124,7 +136,7 @@ The test error rates for 10-Fold Cross Validation and Bootstrap resampling were 
 lcontrol <- trainControl(method = "LOOCV")
 
 # Use train() function 
-set.seed(1)
+#set.seed(1)
 glm.fit2 <- train(Direction ~ Lag1 + Lag2, data = Weekly, method = "glm", trControl = lcontrol)
 glm.fit2
 ```
