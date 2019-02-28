@@ -23,20 +23,29 @@ library(bestglm)
 # Inspecting the dataset
 str(Weekly)
 summary(Weekly)
-# `Weekly` describes percentage returns for the S&P 500 stock index between 1990 and 2010. 1089 observations. 
 ```
 
-```{r message=FALSE, warning=FALSE, paged.print=FALSE}
-# Year: Year that observation was recorded
-# Lag1: Percentage return for previous week 
-# Lag2: Percentage return for 2 weeks before 
-# Lag3: Percentage return for 3 weeks before 
-# Lag4: Percentage return for 4 weeks before 
-# Lag5: Percentage return for 5 weeks before 
-# Volume: Volume of shares traded (avg. no. of daily shares traded in billions)
-# Today: Percentage return for this week 
-# Direction: Factor with levels Down and Up indicating whether the market had a positive or negative return on a given week
-```
+`Weekly` describes percentage returns for the S&P 500 stock index between 1990 and 2010. 1089 observations.
+
+Variables included in the dataset: 
+
+* `Year`: Year that observation was recorded
+
+* `Lag1`: Percentage return for previous week  
+
+* `Lag2`: Percentage return for 2 weeks before
+
+* `Lag3`: Percentage return for 3 weeks before
+
+* `Lag4`: Percentage return for 4 weeks before
+
+* `Lag5`: Percentage return for 5 weeks before
+
+* `Volume`: Volume of shares traded (avg. no. of daily shares traded in billions)
+
+* `Today`: Percentage return for this week 
+
+* `Direction`: Factor with levels Down and Up indicating whether the market had a positive or negative return on a given week
 
 
  (a) Fit a logistic regression model that predicts `Direction` using `Lag1` and `Lag2`.
@@ -125,9 +134,9 @@ cv.error1$delta
  
  (g) Explore any alternative implementations of cross-validation available in userwritten packages (e.g. in `caret`). Implement at least one of them and compare your results with (e) and (f) above.
 
-Using the `trainControl()` function from the `caret` package, I found that the LOOCV test error rate was (1 - 0.55) = 0.45 or 45%, which is comparable to the test error rate obtained in the manual implementation in (e). 
+Using the `trainControl()` function from the `caret` package, I found that the LOOCV test error rate was (1 - 0.55) = 0.45 or 45%, which is comparable to the test error rate obtained in (e) and (f). 
 
-The test error rates for 10-Fold Cross Validation and Bootstrap resampling were also about 45%. 
+The test error rates for 10-Fold Cross Validation and Bootstrap resampling were also about 45%. Overall, estimation of the test error rate was consistent across several cross-validation approaches.  
 
 ```{r}
 # (1) LOOCV with `caret`
